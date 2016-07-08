@@ -29,10 +29,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var state: GameState = .playing
     var score = 0
     var resumeSquare: MSButtonNode!
-    
     var ropeSpacing = 260
-    
     var hangingOnRope = false
+    let touchTimeout = 0.5
     
     override func didMoveToView(view: SKView) {
       
@@ -82,7 +81,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
         if state == .playing {
-            if sinceTouch > 1 {
+            if sinceTouch > touchTimeout {
                 if let ropePinJoint = ropePinJoint {
                     physicsWorld.removeJoint(ropePinJoint)
                     hangingOnRope = false
@@ -95,13 +94,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 //hero.physicsBody?.applyImpulse(CGVectorMake(0, 5))
                 
                 if hero.position.y > 200 {
-                    hero.physicsBody?.applyImpulse(CGVectorMake(0, 0.01))
+                    hero.physicsBody?.applyImpulse(CGVectorMake(0, 0.02))
                     print("highest")
-                } else if hero.position.y > 180 {
-                    hero.physicsBody?.applyImpulse(CGVectorMake(0, 0.3))
-                    print("middle")
                 } else {
-                    hero.physicsBody?.applyImpulse(CGVectorMake(0, 0.5))
+                    hero.physicsBody?.applyImpulse(CGVectorMake(0, 0.03))
                     print("lowest")
                 }
                 
@@ -203,12 +199,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             //print("*")
         //}
     
-    
+        let angleLowerLimit:UInt32 = 1
+        let angleUpperLimit:UInt32 = 3
         
-        var randomAngle = drand48()
-        if randomAngle < 0.3 {
-            randomAngle = 0.3
-        }
+        let randomAngleInt = arc4random_uniform(angleUpperLimit) + angleLowerLimit;
+        let randomAngle = Double(randomAngleInt) * 0.1
         
         rope.storedAngle = randomAngle
         
@@ -221,7 +216,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let move = SKAction.moveBy(CGVector(dx: -ropeSpacing, dy: 0), duration: 0.6)
         for rope in arrayOfRopes {
             rope.runAction(move)
-            
         }
     }
     
