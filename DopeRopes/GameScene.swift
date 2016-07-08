@@ -14,7 +14,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var hero: SKSpriteNode!
     var sinceTouch: CFTimeInterval = 2
     let fixedDelta: CFTimeInterval = 1.0/60.0 /* 60 FPS */
-    let firstRopePosition = CGPoint(x: 400,y:120)
+    let firstRopePosition = CGPoint(x: 420,y:120)
     var ropePinJoint: SKPhysicsJointPin?
     var ground: SKSpriteNode!
     var arrayOfRopes = [Rope]()
@@ -29,12 +29,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var state: GameState = .playing
     var score = 0
     var resumeSquare: MSButtonNode!
-    var ropeSpacing = 260
+    var ropeSpacing = 250
     var hangingOnRope = false
     let touchTimeout = 0.5
+    var groundRemoved = false
+    var angleIncreased = false
+    var indexOfRopeWithHeroAttatched = -1
+    
+    let nudgeTimeout:CFTimeInterval = 3 // seconds before current hero attatched rope angle gets a nudge
+    let nudgeAmount = 0.05 // angle amount to nudge
     
     override func didMoveToView(view: SKView) {
-      
         pauseSquare = childNodeWithName("//pauseSquare") as! MSButtonNode
         ground = childNodeWithName("//ground") as! SKSpriteNode
         scoreLabel = childNodeWithName("//scoreLabel") as! SKLabelNode
@@ -45,9 +50,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         restartSquare = childNodeWithName("//restartSquare") as! MSButtonNode
         resumeSquare = childNodeWithName("//resumeSquare") as! MSButtonNode
         resumeSquare.hidden = true
-        addRope()
         restartSquare.hidden = true
         physicsWorld.contactDelegate = self
+        
+        addRope()
+        
         restartSquare.selectedHandler = {
             let skView = self.view as SKView!
             
@@ -83,17 +90,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if state == .playing {
             if sinceTouch > touchTimeout {
                 if let ropePinJoint = ropePinJoint {
+                    //arrayOfRopes[previousRopeIndex].physicsBody = nil
                     physicsWorld.removeJoint(ropePinJoint)
                     hangingOnRope = false
                     arrayOfRopes[previousRopeIndex].removeFromParent()
                     previousRopeIndex += 1
-                    
+                    angleIncreased = false
                 }
-               
                 
-                hero.physicsBody?.velocity = CGVectorMake(0,0)
-                //hero.physicsBody?.applyImpulse(CGVectorMake(0, 5))
+                //hero.physicsBody?.velocity = CGVectorMake(0,0)
+                hero.physicsBody?.applyImpulse(CGVectorMake(0, 0.03))
                 
+                /*
                 if hero.position.y > 200 {
                     hero.physicsBody?.applyImpulse(CGVectorMake(0, 0.02))
                     print("highest")
@@ -101,11 +109,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     hero.physicsBody?.applyImpulse(CGVectorMake(0, 0.03))
                     print("lowest")
                 }
+                */
                 
                 sinceTouch = 0
                 addRope()
                 moveRopes()
-                 removeGround()
+                
+                if !groundRemoved {
+                    removeGround()
+                }
+                
             }
         }
     }
@@ -177,14 +190,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 //print("rotateBy: \(rotateBy)")
      
                 rope.rope.runAction(swing)
+            }
+            if sinceTouch > nudgeTimeout && !angleIncreased && indexOfRopeWithHeroAttatched >= 0 { // if x seconds passed since last touch(jump)
+                // nudge the rope angle a bit, which should help you reach the next rope if you are stuck
+                arrayOfRopes[indexOfRopeWithHeroAttatched].storedAngle += nudgeAmount
+                angleIncreased = true
                 
+                //arrayOfRopes[indexOfRopeWithHeroAttatched].rope.color = .blueColor()
             }
         }
        // let currentAngle = rope.rope.zRotation
     }
     
     func addRope (){
-        
         hero = self.childNodeWithName("//hero") as! SKSpriteNode
         
         let resourcePath = NSBundle.mainBundle().pathForResource("Rope", ofType: "sks")
@@ -197,10 +215,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             rope.position = CGPoint(x: arrayOfRopes[arrayOfRopes.count - 2].position.x + CGFloat(ropeSpacing), y:firstRopePosition.y)
         }
         
+        //print("ropes:")
         //for rope in arrayOfRopes {
             //print("*")
+            
+            //if rope.position.x < -200 {
+            //    rope.removeFromParent()
+            //}
         //}
     
+        // randomize the angle of the ropes within the specified range
         let angleLowerLimit:UInt32 = 1
         let angleUpperLimit:UInt32 = 3
         
@@ -208,6 +232,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let randomAngle = Double(randomAngleInt) * 0.1
         
         rope.storedAngle = randomAngle
+        
+        // randomize the swinging direction of the ropes
+        if arc4random_uniform(11) > 5 {
+            rope.swingingDirection = .Left
+            rope.storedAngle = -rope.storedAngle
+        }
+        else{
+            rope.swingingDirection = .Right
+        }
         
         let ropePinJoint = SKPhysicsJointPin.jointWithBodyA(rope.skyPin.physicsBody!, bodyB: rope.rope.physicsBody!,
                                                             anchor: CGPoint(x:rope.position.x + 5,y: rope.position.y + 200))
@@ -228,6 +261,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ground.runAction(move)
         if ground.position.x < -500 {
             ground.removeFromParent()
+            groundRemoved = true
         }
     }
     
@@ -258,7 +292,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         
         /* hero contacted rope */
-        if (nodeA.name == "hero" || nodeB.name == "hero") && nodeA.name != "ground" && nodeB.name != "ground" && nodeA.name != "skyPin" && nodeB.name != "skyPin"  {
+        if (nodeA.name == "hero" || nodeB.name == "hero") && nodeA.name != "ground" && nodeB.name != "ground" && nodeA.name != "skyPin" && nodeB.name != "skyPin"{
+            
             let heroPositionAtContact = contact.contactPoint
             
           //  if contact.contactPoint.y > 260 {
@@ -267,11 +302,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 //nodeB.runAction(slideDown)
          //   }
             
-            
             ropePinJoint = SKPhysicsJointPin.jointWithBodyA(nodeA.physicsBody!, bodyB: nodeB.physicsBody!, anchor: heroPositionAtContact)
             physicsWorld.addJoint(ropePinJoint!)
             
             score += 1
+            indexOfRopeWithHeroAttatched += 1
             scoreLabel.text = String(score)
             /*
             
