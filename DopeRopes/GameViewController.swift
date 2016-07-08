@@ -6,6 +6,21 @@
 //  Copyright (c) 2016 Ross, Yulia. All rights reserved.
 //
 
+/*
+ TODO:
+ add grpahics (rope, bg, hero)
+ add sounds
+ test difficulty
+ save high score with NSUserDefaults
+ start screen
+ icon
+ ads
+ add juicy and sexy effects
+ advertisements
+ make rope elastic
+ add an arm
+ */
+
 import UIKit
 import SpriteKit
 
@@ -19,7 +34,7 @@ class GameViewController: UIViewController {
             let skView = self.view as! SKView
             skView.showsFPS = true
             skView.showsNodeCount = true
-            skView.showsPhysics = true
+        //    skView.showsPhysics = true
             
             /* Sprite Kit applies additional optimizations to improve rendering performance */
             skView.ignoresSiblingOrder = true
