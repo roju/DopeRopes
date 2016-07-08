@@ -14,7 +14,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var hero: SKSpriteNode!
     var sinceTouch: CFTimeInterval = 2
     let fixedDelta: CFTimeInterval = 1.0/60.0 /* 60 FPS */
-    let firstRopePosition = CGPoint(x: 380,y:120)
+    let firstRopePosition = CGPoint(x: 400,y:120)
     var ropePinJoint: SKPhysicsJointPin?
     var ground: SKSpriteNode!
     var arrayOfRopes = [Rope]()
@@ -30,7 +30,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var score = 0
     var resumeSquare: MSButtonNode!
     
-    var ropeSpacing = 220
+    var ropeSpacing = 260
+    
+    var hangingOnRope = false
     
     override func didMoveToView(view: SKView) {
       
@@ -83,6 +85,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if sinceTouch > 1 {
                 if let ropePinJoint = ropePinJoint {
                     physicsWorld.removeJoint(ropePinJoint)
+                    hangingOnRope = false
                     arrayOfRopes[previousRopeIndex].removeFromParent()
                     previousRopeIndex += 1
                     
@@ -92,7 +95,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 //hero.physicsBody?.applyImpulse(CGVectorMake(0, 5))
                 
                 if hero.position.y > 200 {
-                    hero.physicsBody?.applyImpulse(CGVectorMake(0, 0.1))
+                    hero.physicsBody?.applyImpulse(CGVectorMake(0, 0.01))
                     print("highest")
                 } else if hero.position.y > 180 {
                     hero.physicsBody?.applyImpulse(CGVectorMake(0, 0.3))
@@ -196,9 +199,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             rope.position = CGPoint(x: arrayOfRopes[arrayOfRopes.count - 2].position.x + CGFloat(ropeSpacing), y:firstRopePosition.y)
         }
         
-        for rope in arrayOfRopes {
+        //for rope in arrayOfRopes {
             //print("*")
-        }
+        //}
     
     
         
@@ -223,6 +226,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func didBeginContact(contact: SKPhysicsContact) {
+       if hangingOnRope == true  {
+            return
+        }
         //print("contact")
         
         /* Ensure only called while game running */
@@ -247,7 +253,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         /* hero contacted rope */
         if (nodeA.name == "hero" || nodeB.name == "hero") && nodeA.name != "ground" && nodeB.name != "ground" && nodeA.name != "skyPin" && nodeB.name != "skyPin"  {
-            var heroPositionAtContact = contact.contactPoint
+            let heroPositionAtContact = contact.contactPoint
             
           //  if contact.contactPoint.y > 260 {
                 //heroPositionAtContact = CGPoint(x: contact.contactPoint.x, y: contact.contactPoint.y - 100)
@@ -288,6 +294,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
  
             */
+            hangingOnRope = true
         }
         
     }
