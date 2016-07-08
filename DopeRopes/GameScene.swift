@@ -89,7 +89,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     previousRopeIndex += 1
                     
                 }
-                ground.removeFromParent()
+               
+                
                 hero.physicsBody?.velocity = CGVectorMake(0,0)
                 //hero.physicsBody?.applyImpulse(CGVectorMake(0, 5))
                 
@@ -104,6 +105,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 sinceTouch = 0
                 addRope()
                 moveRopes()
+                 removeGround()
             }
         }
     }
@@ -216,6 +218,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let move = SKAction.moveBy(CGVector(dx: -ropeSpacing, dy: 0), duration: 0.6)
         for rope in arrayOfRopes {
             rope.runAction(move)
+        }
+    }
+    
+    func removeGround(){
+        ground.physicsBody = nil
+        
+        let move = SKAction.moveBy(CGVector(dx: -ropeSpacing, dy: 0), duration: 0.6)
+        ground.runAction(move)
+        if ground.position.x < -500 {
+            ground.removeFromParent()
         }
     }
     
